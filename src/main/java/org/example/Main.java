@@ -9,10 +9,7 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Date;
-import java.util.List;
+import java.util.*;
 
 public class Main {
 
@@ -27,10 +24,13 @@ public class Main {
         data.add(Arrays.asList("text-1", new BigDecimal("12345678.90"),
                 divideOneHundred(new BigDecimal("0.01"), 12, RoundingMode.DOWN), 3, new Date()));
         data.add(Arrays.asList("text-2", new BigDecimal("12345678.99"),
-                divideOneHundred(new BigDecimal("0.02"), 12, RoundingMode.DOWN), 4, LocalDate.parse("2024-04-06")));
+                divideOneHundred(new BigDecimal("0.02"), 12, RoundingMode.DOWN), 4, LocalDate.parse("2024-04-07")));
 
-        List<String> cellFormat = Arrays.asList(null, "#,##0.00", "0.000000000000%", null, "yyyy-MM-dd");
-        createSheet(workbook, "Sheet1", headers, data, cellFormat);
+        List<String> cellFormatList = Arrays.asList(null, "#,##0.00", "0.000000000000%", null, "yyyy-MM-dd");
+
+        Map<String, CellStyle> cellStyleMap = getCellStyleMap(workbook, cellFormatList);
+
+        createSheet(workbook, "Sheet1", headers, data, cellFormatList, cellStyleMap);
 
         // 写入文件
         FileOutputStream fileOut = new FileOutputStream("example.xlsx");
@@ -40,12 +40,8 @@ public class Main {
         workbook.close();
     }
 
-    private static BigDecimal divideOneHundred(BigDecimal number, int scale, RoundingMode roundingMode) {
-        return number.divide(ONE_HUNDRED, scale, roundingMode);
-    }
-
-    private static void createSheet(Workbook workbook, String sheetName, List<String> headers, List<List<Object>> data, List<String> cellFormat) {
-        Sheet sheet = workbook.createSheet(sheetName); // 创建一个工作表
+    private static Map<String, CellStyle> getCellStyleMap(Workbook workbook, List<String> cellFormatList) {
+        Map<String, CellStyle> result = new HashMap<>();
 
         //header
         Font boldFont = workbook.createFont();
@@ -53,24 +49,48 @@ public class Main {
         CellStyle headerStyle = workbook.createCellStyle();
         headerStyle.setFont(boldFont);
 
+        result.put("header", headerStyle);
+
+        //data
+        CreationHelper createHelper = workbook.getCreationHelper();
+        for (String cellFormat : cellFormatList) {
+            if (cellFormat != null && !result.containsKey(cellFormat)) {
+                CellStyle cellStyle = workbook.createCellStyle();
+                cellStyle.setDataFormat(createHelper.createDataFormat().getFormat(cellFormat));
+                result.put(cellFormat, cellStyle);
+            }
+        }
+
+        return result;
+    }
+
+    private static BigDecimal divideOneHundred(BigDecimal number, int scale, RoundingMode roundingMode) {
+        return number.divide(ONE_HUNDRED, scale, roundingMode);
+    }
+
+    private static void createSheet(Workbook workbook,
+                                    String sheetName,
+                                    List<String> headers,
+                                    List<List<Object>> data,
+                                    List<String> cellFormatList,
+                                    Map<String, CellStyle> cellStyleMap) {
+        Sheet sheet = workbook.createSheet(sheetName); // 创建一个工作表
+
         Row row = sheet.createRow(0);
         for (int i = 0; i < headers.size(); i++) {
             Cell cell = row.createCell(i);
-            cell.setCellStyle(headerStyle);
+            cell.setCellStyle(cellStyleMap.get("header"));
             cell.setCellValue(headers.get(i));
         }
 
         //data
-        CreationHelper createHelper = workbook.getCreationHelper();
         for (int i = 0; i < data.size(); i++) {
             row = sheet.createRow(i + 1);
             for (int j = 0; j < data.get(i).size(); j++) {
                 Cell cell = row.createCell(j);
 
-                if (cellFormat.get(j) != null) {
-                    CellStyle cellStyle = workbook.createCellStyle();
-                    cellStyle.setDataFormat(createHelper.createDataFormat().getFormat(cellFormat.get(j)));
-                    cell.setCellStyle(cellStyle);
+                if (cellFormatList.get(j) != null) {
+                    cell.setCellStyle(cellStyleMap.get(cellFormatList.get(j)));
                 }
 
                 Object obj = data.get(i).get(j);
