@@ -1,6 +1,7 @@
 package org.example;
 
 import org.apache.poi.ss.usermodel.*;
+import org.apache.poi.xssf.usermodel.XSSFColor;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 
 import java.io.FileOutputStream;
@@ -13,7 +14,13 @@ import java.util.*;
 
 public class Main {
 
-    private static BigDecimal ONE_HUNDRED = new BigDecimal("100");
+    private static final BigDecimal ONE_HUNDRED = new BigDecimal("100");
+    private static final String HEADER = "header";
+
+    private static final String CELL_FORMAT_TEXT = "@";
+    private static final String CELL_FORMAT_CURRENCY = "#,#00.00;[Red](#,#00.00)";
+    private static final String CELL_FORMAT_PERCENT = "0.00%";
+    private static final String CELL_FORMAT_DATE = "yyyy-MM-dd";
 
     public static void main(String[] args) throws IOException {
         Workbook workbook = new XSSFWorkbook(); // 创建新的Excel工作簿
@@ -22,11 +29,11 @@ public class Main {
 
         List<List<Object>> data = new ArrayList<>();
         data.add(Arrays.asList("text-1", new BigDecimal("12345678.90"),
-                divideOneHundred(new BigDecimal("0.01"), 12, RoundingMode.DOWN), 3, new Date()));
-        data.add(Arrays.asList("text-2", new BigDecimal("12345678.99"),
-                divideOneHundred(new BigDecimal("0.02"), 12, RoundingMode.DOWN), 4, LocalDate.parse("2024-04-07")));
+                divideOneHundred(new BigDecimal("1"), 12, RoundingMode.DOWN), 3, new Date()));
+        data.add(Arrays.asList("text-2", new BigDecimal("-19.98"),
+                divideOneHundred(new BigDecimal("2"), 12, RoundingMode.DOWN), 4, LocalDate.parse("2024-04-07")));
 
-        List<String> cellFormatList = Arrays.asList(null, "#,##0.00", "0.000000000000%", null, "yyyy-MM-dd");
+        List<String> cellFormatList = Arrays.asList(CELL_FORMAT_TEXT, CELL_FORMAT_CURRENCY, CELL_FORMAT_PERCENT, null, CELL_FORMAT_DATE);
 
         Map<String, CellStyle> cellStyleMap = getCellStyleMap(workbook, cellFormatList);
 
@@ -49,7 +56,13 @@ public class Main {
         CellStyle headerStyle = workbook.createCellStyle();
         headerStyle.setFont(boldFont);
 
-        result.put("header", headerStyle);
+        XSSFColor color = new XSSFColor();
+//        color.setRGB(new byte[] {(byte)255, (byte)255, (byte)0}); // 黄色
+        color.setRGB(new byte[] {(byte)211, (byte)211, (byte)211});  // 浅灰色
+        headerStyle.setFillForegroundColor(color);
+        headerStyle.setFillPattern(FillPatternType.SOLID_FOREGROUND);
+
+        result.put(HEADER, headerStyle);
 
         //data
         CreationHelper createHelper = workbook.getCreationHelper();
@@ -81,7 +94,7 @@ public class Main {
         Row row = sheet.createRow(fromRowNum);
         for (int i = 0; i < headers.size(); i++) {
             Cell cell = row.createCell(i);
-            cell.setCellStyle(cellStyleMap.get("header"));
+            cell.setCellStyle(cellStyleMap.get(HEADER));
             cell.setCellValue(headers.get(i));
         }
 
