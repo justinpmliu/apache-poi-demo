@@ -30,7 +30,7 @@ public class Main {
 
         Map<String, CellStyle> cellStyleMap = getCellStyleMap(workbook, cellFormatList);
 
-        createSheet(workbook, "Sheet1", headers, data, cellFormatList, cellStyleMap);
+        createSheet(workbook, "Sheet1", 0, headers, data, cellFormatList, cellStyleMap);
 
         // 写入文件
         FileOutputStream fileOut = new FileOutputStream("example.xlsx");
@@ -70,13 +70,15 @@ public class Main {
 
     private static void createSheet(Workbook workbook,
                                     String sheetName,
+                                    int fromRowNum,
                                     List<String> headers,
                                     List<List<Object>> data,
                                     List<String> cellFormatList,
                                     Map<String, CellStyle> cellStyleMap) {
         Sheet sheet = workbook.createSheet(sheetName); // 创建一个工作表
 
-        Row row = sheet.createRow(0);
+        //header
+        Row row = sheet.createRow(fromRowNum);
         for (int i = 0; i < headers.size(); i++) {
             Cell cell = row.createCell(i);
             cell.setCellStyle(cellStyleMap.get("header"));
@@ -85,7 +87,7 @@ public class Main {
 
         //data
         for (int i = 0; i < data.size(); i++) {
-            row = sheet.createRow(i + 1);
+            row = sheet.createRow(fromRowNum + i + 1);
             for (int j = 0; j < data.get(i).size(); j++) {
                 Cell cell = row.createCell(j);
 
@@ -106,6 +108,8 @@ public class Main {
                     cell.setCellValue(localDateTime);
                 } else if (obj instanceof String str) {
                     cell.setCellValue(str);
+                } else if (obj != null) {
+                    cell.setCellValue(obj.toString());
                 }
             }
         }
